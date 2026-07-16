@@ -3,14 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import ConfirmDialog from "../components/ConfirmDialog";
-
-const CATEGORIES = [
-  { value: "cereales", label: "Céréales & féculents" },
-  { value: "proteines", label: "Protéines" },
-  { value: "legumes", label: "Légumes" },
-  { value: "basiques", label: "Basiques & sauces" },
-  { value: "autre", label: "Autre" },
-];
+import { CATEGORIES_INGREDIENTS as CATEGORIES } from "../../lib/categoriesIngredients";
 
 export default function AdminIngredients() {
   const [ingredients, setIngredients] = useState([]);
@@ -59,17 +52,17 @@ export default function AdminIngredients() {
   const askDelete = (ingredient) => setToDelete(ingredient);
 
   const confirmDelete = async () => {
-  if (!toDelete) return;
-  await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/backstage/ingredients/${toDelete.id}/`,
-    {
-      method: "DELETE",
-      credentials: "include",
-    },
-  );
-  setIngredients((prev) => prev.filter((i) => i.id !== toDelete.id));
-  setToDelete(null);
-};
+    if (!toDelete) return;
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/backstage/ingredients/${toDelete.id}/`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      },
+    );
+    setIngredients((prev) => prev.filter((i) => i.id !== toDelete.id));
+    setToDelete(null);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -82,32 +75,34 @@ export default function AdminIngredients() {
 
       <form
         onSubmit={handleAdd}
-        className="bg-white border border-ink/10 rounded-xl p-4 flex gap-2"
+        className="bg-white border border-ink/10 rounded-xl p-4 flex flex-col sm:flex-row gap-2"
       >
         <input
           value={nom}
           onChange={(e) => setNom(e.target.value)}
           placeholder="Nom de l'ingrédient"
-          className="flex-1 px-3.5 py-2.5 rounded-lg border border-ink/15 text-sm focus:outline-none focus:border-palm"
+          className="w-full sm:flex-1 min-w-0 px-3.5 py-2.5 rounded-lg border border-ink/15 text-sm focus:outline-none focus:border-palm"
         />
-        <select
-          value={categorie}
-          onChange={(e) => setCategorie(e.target.value)}
-          className="px-3 py-2.5 rounded-lg border border-ink/15 text-sm bg-white"
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          disabled={saving}
-          className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-palm text-paper hover:bg-palm-dark disabled:opacity-60"
-        >
-          <Plus size={18} />
-        </button>
+        <div className="flex gap-2">
+          <select
+            value={categorie}
+            onChange={(e) => setCategorie(e.target.value)}
+            className="flex-1 sm:flex-none sm:w-auto min-w-0 px-3 py-2.5 rounded-lg border border-ink/15 text-sm bg-white"
+          >
+            {CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={saving}
+            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-palm text-paper hover:bg-palm-dark disabled:opacity-60"
+          >
+            <Plus size={18} />
+          </button>
+        </div>
       </form>
 
       {loading ? (

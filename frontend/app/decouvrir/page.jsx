@@ -5,6 +5,7 @@ import { REPAS_OPTIONS } from "../lib/repas";
 import { ENVIE_OPTIONS } from "../lib/envies";
 import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { CATEGORIES_INGREDIENTS } from "../lib/categoriesIngredients";
 import {
   ArrowLeft,
   ArrowRight,
@@ -194,13 +195,9 @@ export default function Decouvrir() {
         if (!groupes[ing.categorie]) groupes[ing.categorie] = [];
         groupes[ing.categorie].push(ing.nom);
       });
-      const LABELS = {
-        cereales: "Céréales & féculents",
-        proteines: "Protéines",
-        legumes: "Légumes",
-        basiques: "Basiques & sauces",
-        autre: "Autre",
-      };
+      const LABELS = Object.fromEntries(
+        CATEGORIES_INGREDIENTS.map((c) => [c.value, c.label]),
+      );
       setIngredientCategories(
         Object.entries(groupes).map(([key, items]) => ({
           name: LABELS[key] || key,

@@ -33,9 +33,16 @@ class Envie(models.Model):
 class Ingredient(models.Model):
     class Categorie(models.TextChoices):
         CEREALES = "cereales", "Céréales & féculents"
-        PROTEINES = "proteines", "Protéines"
         LEGUMES = "legumes", "Légumes"
-        BASIQUES = "basiques", "Basiques & sauces"
+        FRUITS = "fruits", "Fruits"
+        VIANDES = "viandes", "Viandes"
+        POISSONS = "poissons", "Poissons & fruits de mer"
+        OEUFS = "oeufs", "Œuf & produits laitiers"
+        HUILES = "huiles", "Huiles"
+        EPICES = "epices", "Épices & assaisonnements"
+        CONDIMENTS = "condiments", "Sauce & Condiments"
+        SEC = "sec", "Produits secs"
+        LEGUMINEUX = "legumineux", "Légumineux"
         AUTRE = "autre", "Autre"
 
     nom = models.CharField(max_length=100, unique=True)

@@ -143,7 +143,7 @@ export default function GardeManger() {
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addCustom()}
-              placeholder="Ex : wagasi, akassa..."
+              placeholder="Ex : Orange, Yaourt..."
               className="flex-1 px-4 py-2.5 rounded-full border border-ink/15 bg-white text-sm focus:outline-none focus:border-palm"
             />
             <button
