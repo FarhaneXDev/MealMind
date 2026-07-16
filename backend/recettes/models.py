@@ -18,11 +18,12 @@ class Repas(models.Model):
 
 class Envie(models.Model):
     class Code(models.TextChoices):
-        FATIGUE = "fatigue", "Je suis fatigué(e), un truc simple"
+        SIMPLE = "simple", "Un truc simple et rapide"
         ECONOMIQUE = "economique", "Je fais attention à mon budget"
         ENERGETIQUE = "energetique", "J'ai besoin d'énergie"
         PLAISIR = "plaisir", "Je me fais plaisir aujourd'hui"
         SURPRISE = "surprise", "Surprends-moi"
+        GOURMAND = "gourmand", "Un plat riche et copieux"
 
     code = models.CharField(max_length=20, choices=Code.choices, unique=True)
 

@@ -15,21 +15,27 @@ export default function RecetteForm({ recetteExistante }) {
   const [ingredientOptions, setIngredientOptions] = useState([]);
 
   const [titre, setTitre] = useState(recetteExistante?.titre || "");
-  const [difficulte, setDifficulte] = useState(recetteExistante?.difficulte || "Facile");
+  const [difficulte, setDifficulte] = useState(
+    recetteExistante?.difficulte || "Facile",
+  );
   const [dureeMin, setDureeMin] = useState(recetteExistante?.duree_min || 15);
-  const [budgetFCFA, setBudgetFCFA] = useState(recetteExistante?.budget_fcfa || 500);
+  const [budgetFCFA, setBudgetFCFA] = useState(
+    recetteExistante?.budget_fcfa || 500,
+  );
   const [repasSelect, setRepasSelect] = useState(recetteExistante?.repas || []);
-  const [envieSelect, setEnvieSelect] = useState(recetteExistante?.envies || []);
+  const [envieSelect, setEnvieSelect] = useState(
+    recetteExistante?.envies || [],
+  );
 
   const [ingredientsListe, setIngredientsListe] = useState(
     recetteExistante?.ingredients_liste?.map((i) => ({
       ingredient: i.ingredient,
       essentiel: i.essentiel,
-    })) || [{ ingredient: "", essentiel: true }]
+    })) || [{ ingredient: "", essentiel: true }],
   );
 
   const [etapes, setEtapes] = useState(
-    recetteExistante?.etapes?.map((e) => e.description) || [""]
+    recetteExistante?.etapes?.map((e) => e.description) || [""],
   );
 
   const [saving, setSaving] = useState(false);
@@ -38,9 +44,15 @@ export default function RecetteForm({ recetteExistante }) {
   useEffect(() => {
     const fetchOptions = async () => {
       const [repasRes, envieRes, ingRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/backstage/repas/`, { credentials: "include" }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/backstage/envies/`, { credentials: "include" }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/backstage/ingredients/`, { credentials: "include" }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/backstage/repas/`, {
+          credentials: "include",
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/backstage/envies/`, {
+          credentials: "include",
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/backstage/ingredients/`, {
+          credentials: "include",
+        }),
       ]);
       if (repasRes.ok) setRepasOptions(await repasRes.json());
       if (envieRes.ok) setEnvieOptions(await envieRes.json());
@@ -50,21 +62,28 @@ export default function RecetteForm({ recetteExistante }) {
   }, []);
 
   const toggleRepas = (id) => {
-    setRepasSelect((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
+    setRepasSelect((prev) =>
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id],
+    );
   };
 
   const toggleEnvie = (id) => {
-    setEnvieSelect((prev) => (prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]));
+    setEnvieSelect((prev) =>
+      prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id],
+    );
   };
 
   const updateIngredientLigne = (index, key, value) => {
     setIngredientsListe((prev) =>
-      prev.map((ing, i) => (i === index ? { ...ing, [key]: value } : ing))
+      prev.map((ing, i) => (i === index ? { ...ing, [key]: value } : ing)),
     );
   };
 
   const addIngredientLigne = () => {
-    setIngredientsListe((prev) => [...prev, { ingredient: "", essentiel: true }]);
+    setIngredientsListe((prev) => [
+      ...prev,
+      { ingredient: "", essentiel: true },
+    ]);
   };
 
   const removeIngredientLigne = (index) => {
@@ -105,7 +124,10 @@ export default function RecetteForm({ recetteExistante }) {
       envies: envieSelect,
       ingredients_liste: ingredientsListe
         .filter((i) => i.ingredient)
-        .map((i) => ({ ingredient: Number(i.ingredient), essentiel: i.essentiel })),
+        .map((i) => ({
+          ingredient: Number(i.ingredient),
+          essentiel: i.essentiel,
+        })),
       etapes: etapes
         .map((desc, i) => ({ ordre: i + 1, description: desc.trim() }))
         .filter((e) => e.description),
@@ -235,7 +257,7 @@ export default function RecetteForm({ recetteExistante }) {
                     : "bg-white text-ink/70 border-ink/15"
                 }`}
               >
-                {e.code}
+                {e.label}
               </button>
             ))}
           </div>
@@ -252,7 +274,9 @@ export default function RecetteForm({ recetteExistante }) {
             <div key={index} className="flex items-center gap-2">
               <select
                 value={ing.ingredient}
-                onChange={(e) => updateIngredientLigne(index, "ingredient", e.target.value)}
+                onChange={(e) =>
+                  updateIngredientLigne(index, "ingredient", e.target.value)
+                }
                 className="flex-1 px-3 py-2 rounded-lg border border-ink/15 text-sm bg-white"
               >
                 <option value="">— Choisir —</option>
@@ -266,7 +290,9 @@ export default function RecetteForm({ recetteExistante }) {
                 <input
                   type="checkbox"
                   checked={ing.essentiel}
-                  onChange={(e) => updateIngredientLigne(index, "essentiel", e.target.checked)}
+                  onChange={(e) =>
+                    updateIngredientLigne(index, "essentiel", e.target.checked)
+                  }
                   className="accent-palm"
                 />
                 essentiel
@@ -340,7 +366,11 @@ export default function RecetteForm({ recetteExistante }) {
         className="flex items-center justify-center gap-2 bg-piment text-white font-semibold px-6 py-3.5 rounded-full hover:bg-piment-dark transition-colors disabled:opacity-60"
       >
         <Save size={18} />
-        {saving ? "Enregistrement..." : isEdition ? "Mettre à jour" : "Créer la recette"}
+        {saving
+          ? "Enregistrement..."
+          : isEdition
+            ? "Mettre à jour"
+            : "Créer la recette"}
       </button>
     </form>
   );

@@ -102,10 +102,15 @@ class SuggestionView(APIView):
         def score(recette):
             if not selected_ingredients:
                 return 0
-            liaisons = recette.recetteingredient_set.select_related("ingredient").all()
-            possedes = [l for l in liaisons if l.ingredient.nom in selected_ingredients]
-            essentiels_possedes = sum(1 for l in possedes if l.essentiel)
-            return essentiels_possedes * 2 + len(possedes)
+            liaisons = list(recette.recetteingredient_set.select_related("ingredient").all())
+            essentiels = [l for l in liaisons if l.essentiel]
+            essentiels_possedes = [l for l in essentiels if l.ingredient.nom in selected_ingredients]
+            optionnels_possedes = [
+                l for l in liaisons if not l.essentiel and l.ingredient.nom in selected_ingredients
+            ]
+
+            couverture = len(essentiels_possedes) / len(essentiels) if essentiels else 0
+            return couverture * 100 + len(optionnels_possedes)
 
         scored = [(r, score(r)) for r in pool]
         top_score = max(s for _, s in scored)

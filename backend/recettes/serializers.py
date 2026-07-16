@@ -9,9 +9,14 @@ class RepasSerializer(serializers.ModelSerializer):
 
 
 class EnvieSerializer(serializers.ModelSerializer):
+    label = serializers.SerializerMethodField()
+
     class Meta:
         model = Envie
-        fields = ["id", "code"]
+        fields = ["id", "code", "label"]
+
+    def get_label(self, obj):
+        return dict(Envie.Code.choices).get(obj.code, obj.code)
 
 
 class IngredientSerializer(serializers.ModelSerializer):
