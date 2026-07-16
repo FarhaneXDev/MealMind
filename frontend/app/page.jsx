@@ -149,8 +149,8 @@ export default function Home() {
         </h1>
 
         <p className="mt-5 text-base sm:text-lg text-ink/70 max-w-md mx-auto">
-          Dis-nous ton repas, ton temps et ton envie. MealMind te propose une
-          recette précise, tout de suite. Pas de liste à parcourir.
+          Dis-nous ton repas, ton temps, ton envie et ce que tu as sous la main.
+          MealMind te propose une recette précise, tout de suite.
         </p>
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -181,7 +181,7 @@ export default function Home() {
         className="max-w-5xl mx-auto px-5 sm:px-8 pb-20 sm:pb-28"
       >
         <h2 className="text-center text-2xl sm:text-3xl font-bold tracking-tight">
-          Trois questions. Une recette.
+          Quelques questions. Une recette.
         </h2>
         <p className="text-center text-ink/60 mt-2 mb-12 text-sm sm:text-base">
           Comme au comptoir&nbsp;: on prend ta commande, on te tamponne un
