@@ -47,6 +47,9 @@ export default function Decouvrir() {
   const [openToComplete, setOpenToComplete] = useState(false);
   const [readyToShop, setReadyToShop] = useState(null); // 'oui' | 'non' | null
   const [budget, setBudget] = useState(null);
+  const [erreurSuggestion, setErreurSuggestion] = useState("");
+  const [tourComplet, setTourComplet] = useState(false);
+  const [repasDisponibles, setRepasDisponibles] = useState([]);
 
   const [showResult, setShowResult] = useState(false);
   const [recipe, setRecipe] = useState(null);
@@ -110,13 +113,35 @@ export default function Decouvrir() {
     return params.toString();
   };
 
-  const goToResult = async () => {
+  const goToResult = async (repasOverride) => {
+    setErreurSuggestion("");
+    const repasUtilise = repasOverride || repas;
+
+    const params = new URLSearchParams();
+    params.set("repas", repasUtilise);
+    if (temps) params.set("temps", temps);
+    if (envie) params.set("envie", envie);
+    if (scenario) params.set("scenario", scenario);
+    if (budget) params.set("budget", budget);
+    if (selected.length) params.set("ingredients", selected.join(","));
+
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/suggestion/?${buildQuery([])}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/suggestion/?${params.toString()}`,
     );
-    if (!res.ok) return;
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setErreurSuggestion(
+        data.detail || "Aucune recette disponible pour l'instant.",
+      );
+      setRepasDisponibles(data.repas_disponibles || []);
+      return;
+    }
+
+    if (repasOverride) setRepas(repasOverride);
     const r = await res.json();
     setRecipe(r);
+    setTourComplet(false);
     setExcluded([r.id]);
     setFavoriActif(false);
     setCuisineConfirme(false);
@@ -124,15 +149,48 @@ export default function Decouvrir() {
   };
 
   const anotherIdea = async () => {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/suggestion/?${buildQuery(excluded)}`,
+    setErreurSuggestion("");
+
+    const params = new URLSearchParams();
+    params.set("repas", repas);
+    if (temps) params.set("temps", temps);
+    if (envie) params.set("envie", envie);
+    if (scenario) params.set("scenario", scenario);
+    if (budget) params.set("budget", budget);
+    if (selected.length) params.set("ingredients", selected.join(","));
+    if (excluded.length) params.set("exclude", excluded.join(","));
+
+    let res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/suggestion/?${params.toString()}`,
     );
-    if (!res.ok) return;
+
+    // Si tout a déjà été vu, on retente sans exclusion plutôt que d'échouer
+    if (!res.ok) {
+      params.delete("exclude");
+      res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/suggestion/?${params.toString()}`,
+      );
+    }
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setErreurSuggestion(
+        data.detail || "Aucune autre recette disponible pour l'instant.",
+      );
+      setRepasDisponibles(data.repas_disponibles || []);
+      return;
+    }
+
     const r = await res.json();
     setRecipe(r);
-    setExcluded((prev) => [...prev, r.id]);
+    setTourComplet(Boolean(r.tour_complet));
+    setExcluded((prev) => (prev.includes(r.id) ? [r.id] : [...prev, r.id]));
     setFavoriActif(false);
     setCuisineConfirme(false);
+  };
+
+  const essayerAutreRepas = (nouveauRepas) => {
+    goToResult(nouveauRepas);
   };
 
   const toggleFavori = async (recetteId) => {
@@ -228,6 +286,13 @@ export default function Decouvrir() {
             Recommencer
           </button>
 
+          {tourComplet && (
+            <p className="mb-3 text-center text-amber-600 text-xs ">
+              Tu as fait le tour des recettes disponibles pour ces critères —
+              en revoici une.
+            </p>
+          )}
+
           <div className="relative bg-white border border-ink/10 rounded-lg shadow-md px-6 pt-8 pb-6 overflow-hidden">
             <div
               className="absolute -top-[6px] left-0 right-0 h-3"
@@ -270,6 +335,37 @@ export default function Decouvrir() {
                 ))}
             </div>
           </div>
+
+          {recipe.compromis &&
+            (!recipe.compromis.temps_respecte ||
+              !recipe.compromis.envie_respectee ||
+              (recipe.compromis.couverture_ingredients !== null &&
+                recipe.compromis.couverture_ingredients < 100)) && (
+              <div className="mt-4 bg-mais/10 border border-mais/30 rounded-lg p-4">
+                <p className="text-xs font-semibold text-ink/70 mb-1.5">
+                  On a dû faire un compromis pour te trouver ça :
+                </p>
+                <ul className="text-xs text-ink/60 space-y-0.5">
+                  {!recipe.compromis.temps_respecte && (
+                    <li>
+                      • Cette recette prend un peu plus de temps que demandé
+                    </li>
+                  )}
+                  {!recipe.compromis.envie_respectee && (
+                    <li>
+                      • Aucune recette ne correspondait exactement à ton envie
+                    </li>
+                  )}
+                  {recipe.compromis.couverture_ingredients !== null &&
+                    recipe.compromis.couverture_ingredients < 100 && (
+                      <li>
+                        • Tu as {recipe.compromis.couverture_ingredients}% des
+                        ingrédients essentiels
+                      </li>
+                    )}
+                </ul>
+              </div>
+            )}
 
           {(scenario === "courses" || scenario === "complete") && (
             <div className="mt-4 bg-white border border-dashed border-ink/20 rounded-lg p-5">
@@ -323,6 +419,11 @@ export default function Decouvrir() {
                 />
               </button>
             </div>
+            {erreurSuggestion && (
+              <div className="mb-3 bg-piment/5 border border-piment/20 rounded-lg p-3 text-center">
+                <p className="text-sm text-piment-dark">{erreurSuggestion}</p>
+              </div>
+            )}
             <button
               onClick={anotherIdea}
               className="w-full flex items-center justify-center gap-2 border border-ink/15 text-ink font-semibold px-6 py-3.5 rounded-full hover:bg-white transition-colors"
@@ -623,9 +724,39 @@ export default function Decouvrir() {
               )}
             </div>
 
+            {erreurSuggestion && (
+              <div className="mt-4 bg-piment/5 border border-piment/20 rounded-lg p-4">
+                <p className="text-sm text-piment-dark text-center">
+                  {erreurSuggestion}
+                </p>
+                {repasDisponibles.length > 0 ? (
+                  <>
+                    <p className="text-xs text-ink/50 text-center mt-2 mb-3">
+                      Il y a déjà des recettes pour :
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {repasDisponibles.map((r) => (
+                        <button
+                          key={r}
+                          onClick={() => essayerAutreRepas(r)}
+                          className="text-sm px-3.5 py-2 rounded-full border border-palm text-palm hover:bg-palm/5 transition-colors"
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-xs text-ink/50 text-center mt-1">
+                    Reviens un peu plus tard, la base se remplit.
+                  </p>
+                )}
+              </div>
+            )}
+
             <button
               disabled={!canContinueStep4}
-              onClick={goToResult}
+              onClick={() => goToResult()}
               className="mt-8 w-full flex items-center justify-center gap-2 bg-piment text-white font-semibold px-6 py-3.5 rounded-full hover:bg-piment-dark transition-colors disabled:opacity-30 disabled:pointer-events-none"
             >
               Voir ma recette

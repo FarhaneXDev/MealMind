@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
+import Footer from "../components/Footer";
 import Link from "next/link";
 import {
   ChefHat,
@@ -124,7 +124,7 @@ export default function Home() {
                 <Link
                   href="/connexion"
                   onClick={() => setOpen(false)}
-                  className="text-sm font-medium text-ink/80 hover:text-ink px-3 py-3 rounded-lg hover:bg-paper transition-colors"
+                  className="text-sm bg-piment text-paper justify-center flex items-center font-semibold hover:text-ink px-3 py-3 rounded-lg hover:bg-paper transition-colors"
                 >
                   Se connecter
                 </Link>
@@ -295,9 +295,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="max-w-5xl mx-auto px-5 sm:px-8 py-8 text-center text-xs text-ink/40">
-        Cuisine rapide
-      </footer>
+      <Footer />
     </div>
   );
 }

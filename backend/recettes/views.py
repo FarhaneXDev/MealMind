@@ -70,24 +70,44 @@ class SuggestionView(APIView):
         selected_ingredients = [i.strip() for i in ingredients_param.split(",") if i.strip()]
         exclude_ids = [int(i) for i in exclude_param.split(",") if i.strip().isdigit()]
 
-        # 1. Filtre obligatoire : repas + pas déjà proposée
-        pool = Recette.objects.filter(repas__nom=repas).exclude(id__in=exclude_ids).distinct()
-        if not pool.exists():
+        # 1. Filtre obligatoire : repas, avec détection du "tour complet"
+        pool_avec_exclusion = (
+            Recette.objects.filter(repas__nom=repas).exclude(id__in=exclude_ids).distinct()
+        )
+        tour_complet = bool(exclude_ids) and not pool_avec_exclusion.exists()
+
+        if pool_avec_exclusion.exists():
+            pool = pool_avec_exclusion
+        else:
             pool = Recette.objects.filter(repas__nom=repas).distinct()
 
         if not pool.exists():
-            return Response({"detail": "Aucune recette disponible pour ce repas."}, status=404)
+            repas_disponibles = list(
+                Repas.objects.filter(recettes__isnull=False)
+                .distinct()
+                .values_list("nom", flat=True)
+            )
+            return Response(
+                {
+                    "detail": f"Pas encore de recette pour \"{repas}\".",
+                    "repas_disponibles": repas_disponibles,
+                },
+                status=404,
+            )
 
         # 2. Filtre temps, avec repli
         temps_max = TEMPS_LIMITES.get(temps, float("inf"))
         avec_temps = pool.filter(duree_min__lte=temps_max)
-        if avec_temps.exists():
+        temps_respectable = avec_temps.exists()
+        if temps_respectable:
             pool = avec_temps
 
         # 3. Filtre envie, avec repli
+        envie_respectable = True
         if envie:
             avec_envie = pool.filter(envies__code=envie).distinct()
-            if avec_envie.exists():
+            envie_respectable = avec_envie.exists()
+            if envie_respectable:
                 pool = avec_envie
 
         # 4. Filtre budget, uniquement scénario "courses"
@@ -98,26 +118,44 @@ class SuggestionView(APIView):
 
         pool = list(pool.distinct())
 
-        # 5. Score selon les ingrédients déjà possédés
-        def score(recette):
+        # 5. Score selon couverture des ingrédients possédés
+        def couverture(recette):
             if not selected_ingredients:
-                return 0
+                return 0, 0
             liaisons = list(recette.recetteingredient_set.select_related("ingredient").all())
             essentiels = [l for l in liaisons if l.essentiel]
-            essentiels_possedes = [l for l in essentiels if l.ingredient.nom in selected_ingredients]
+            essentiels_possedes = [
+                l for l in essentiels if l.ingredient.nom in selected_ingredients
+            ]
             optionnels_possedes = [
                 l for l in liaisons if not l.essentiel and l.ingredient.nom in selected_ingredients
             ]
+            ratio = len(essentiels_possedes) / len(essentiels) if essentiels else 0
+            return ratio, len(optionnels_possedes)
 
-            couverture = len(essentiels_possedes) / len(essentiels) if essentiels else 0
-            return couverture * 100 + len(optionnels_possedes)
+        if selected_ingredients:
+            avec_match = [r for r in pool if couverture(r)[0] > 0]
+            if avec_match:
+                pool = avec_match
 
-        scored = [(r, score(r)) for r in pool]
-        top_score = max(s for _, s in scored)
-        top = [r for r, s in scored if s == top_score]
+        # 6. Score final et sélection
+        scored = [(r, *couverture(r)) for r in pool]
+        meilleur_ratio = max(s[1] for s in scored)
+        top = [s for s in scored if s[1] == meilleur_ratio]
+        meilleur_optionnels = max(s[2] for s in top)
+        top = [s for s in top if s[2] == meilleur_optionnels]
 
-        choix = random.choice(top)
-        return Response(RecettePublicSerializer(choix).data)
+        choix, ratio_final, _ = random.choice(top)
+
+        data = RecettePublicSerializer(choix).data
+        data["compromis"] = {
+            "temps_respecte": temps_respectable,
+            "envie_respectee": envie_respectable,
+            "couverture_ingredients": round(ratio_final * 100) if selected_ingredients else None,
+        }
+        data["tour_complet"] = tour_complet
+        return Response(data)
+        
 
 class RecettePublicDetailView(generics.RetrieveAPIView):
     queryset = Recette.objects.all()
