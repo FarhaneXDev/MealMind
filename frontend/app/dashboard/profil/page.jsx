@@ -3,14 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Mail, Lock, Trash2, Save, Eye, EyeOff } from "lucide-react";
-import { useUser } from "../../context/UserContext";
+import { AVATAR_OPTIONS, getAvatar } from "../../lib/avatars";
+import { useUser, useSetUser } from "../../context/UserContext";
 
 export default function Profil() {
   const router = useRouter();
   const user = useUser();
+  const setUser = useSetUser();
 
   const [nom, setNom] = useState("");
   const [email, setEmail] = useState("");
+  const [avatar, setAvatar] = useState("chef-palm");
   const [savingInfo, setSavingInfo] = useState(false);
   const [infoSaved, setInfoSaved] = useState(false);
   const [infoError, setInfoError] = useState("");
@@ -29,6 +32,7 @@ export default function Profil() {
     if (user) {
       setNom(user.username || "");
       setEmail(user.email || "");
+      setAvatar(user.avatar || "chef-palm");
     }
   }, [user]);
 
@@ -42,13 +46,17 @@ export default function Profil() {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: nom, email }),
+        body: JSON.stringify({ username: nom, email, avatar }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setInfoError(Object.values(data)?.[0]?.[0] || "Impossible d'enregistrer.");
+        setInfoError(
+          Object.values(data)?.[0]?.[0] || "Impossible d'enregistrer.",
+        );
         return;
       }
+      const updatedUser = await res.json();
+      setUser(updatedUser);
       setInfoSaved(true);
     } finally {
       setSavingInfo(false);
@@ -65,7 +73,9 @@ export default function Profil() {
       return;
     }
     if (nouveauMdp.length < 8) {
-      setPwdError("Le nouveau mot de passe doit contenir au moins 8 caractères.");
+      setPwdError(
+        "Le nouveau mot de passe doit contenir au moins 8 caractères.",
+      );
       return;
     }
     if (nouveauMdp !== confirmMdp) {
@@ -85,11 +95,15 @@ export default function Profil() {
             ancien_mot_de_passe: ancienMdp,
             nouveau_mot_de_passe: nouveauMdp,
           }),
-        }
+        },
       );
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setPwdError(data.ancien_mot_de_passe?.[0] || data.detail || "Une erreur est survenue.");
+        setPwdError(
+          data.ancien_mot_de_passe?.[0] ||
+            data.detail ||
+            "Une erreur est survenue.",
+        );
         return;
       }
       setPwdSaved(true);
@@ -113,7 +127,31 @@ export default function Profil() {
     <div className="flex flex-col gap-6 max-w-lg">
       <div>
         <h1 className="text-2xl font-extrabold tracking-tight">Mon profil</h1>
-        <p className="text-sm text-ink/60 mt-1">Gère tes informations et ton compte.</p>
+        <p className="text-sm text-ink/60 mt-1">
+          Gère tes informations et ton compte.
+        </p>
+      </div>
+
+      <div className="bg-white border border-ink/10 rounded-xl p-5">
+        <p className="text-sm font-bold mb-3">Ton avatar</p>
+        <div className="grid grid-cols-4 gap-3">
+          {AVATAR_OPTIONS.map((a) => {
+            const Icon = a.icon;
+            const actif = avatar === a.id;
+            return (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setAvatar(a.id)}
+                className={`aspect-square rounded-full ${a.bg} flex items-center justify-center transition-all ${
+                  actif ? "ring-4 ring-ink/20" : "opacity-60 hover:opacity-100"
+                }`}
+              >
+                <Icon size={22} className="text-paper" />
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <form
@@ -127,7 +165,7 @@ export default function Profil() {
 
         <div>
           <label className="text-xs font-semibold uppercase tracking-widest text-ink/40">
-            Nom
+            Nom d&apos;utilisateur
           </label>
           <input
             type="text"
@@ -145,7 +183,10 @@ export default function Profil() {
             Email
           </label>
           <div className="relative mt-1.5">
-            <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30" />
+            <Mail
+              size={15}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/30"
+            />
             <input
               type="email"
               value={email}
@@ -170,7 +211,9 @@ export default function Profil() {
             {savingInfo ? "Enregistrement..." : "Enregistrer"}
           </button>
           {infoSaved && (
-            <span className="text-xs text-palm font-medium">Modifications enregistrées</span>
+            <span className="text-xs text-palm font-medium">
+              Modifications enregistrées
+            </span>
           )}
         </div>
       </form>
@@ -243,7 +286,9 @@ export default function Profil() {
             {savingPwd ? "Enregistrement..." : "Changer le mot de passe"}
           </button>
           {pwdSaved && (
-            <span className="text-xs text-palm font-medium">Mot de passe mis à jour</span>
+            <span className="text-xs text-palm font-medium">
+              Mot de passe mis à jour
+            </span>
           )}
         </div>
       </form>
@@ -254,8 +299,8 @@ export default function Profil() {
           Supprimer mon compte
         </p>
         <p className="text-xs text-ink/50">
-          Cette action est définitive. Ton historique, tes favoris et ton garde-manger
-          seront supprimés.
+          Cette action est définitive. Ton historique, tes favoris et ton
+          garde-manger seront supprimés.
         </p>
 
         {!confirmDelete ? (

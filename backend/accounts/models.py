@@ -4,6 +4,7 @@ from django.db import models
 
 class Utilisateur(AbstractUser):
     email = models.EmailField(unique=True)
+    avatar = models.CharField(max_length=30, default="chef-palm")
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username"]

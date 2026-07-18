@@ -3,7 +3,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChefHat, LogOut, LayoutDashboard, BookOpen, Wheat } from "lucide-react";
+
+import {
+  ChefHat,
+  LogOut,
+  LayoutDashboard,
+  BookOpen,
+  Wheat,
+} from "lucide-react";
 
 const TABS = [
   { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard },
@@ -20,9 +27,12 @@ export default function AdminLayout({ children }) {
   useEffect(() => {
     const checkAccess = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/moi/`, {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/auth/moi/`,
+          {
+            credentials: "include",
+          },
+        );
         if (!res.ok) throw new Error("non authentifié");
         const user = await res.json();
         if (!user.is_staff) throw new Error("non autorisé");
@@ -35,6 +45,22 @@ export default function AdminLayout({ children }) {
     };
     checkAccess();
   }, [router]);
+
+  useEffect(() => {
+    const interval = setInterval(
+      async () => {
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/rafraichir/`, {
+            method: "POST",
+            credentials: "include",
+          });
+        } catch {}
+      },
+      20 * 60 * 1000,
+    );
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/deconnexion/`, {
@@ -58,7 +84,10 @@ export default function AdminLayout({ children }) {
     <div className="min-h-screen bg-paper text-ink">
       <header className="sticky top-0 z-30 bg-ink text-paper">
         <div className="max-w-3xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-          <Link href="/admin" className="flex items-center gap-2 font-extrabold text-lg">
+          <Link
+            href="/admin"
+            className="flex items-center gap-2 font-extrabold text-lg"
+          >
             <ChefHat size={20} />
             MealMind · Backstage
           </Link>
@@ -72,13 +101,18 @@ export default function AdminLayout({ children }) {
         </div>
         <nav className="max-w-3xl mx-auto px-5 sm:px-8 flex gap-1">
           {TABS.map(({ href, label, icon: Icon }) => {
-            const active = href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+            const active =
+              href === "/admin"
+                ? pathname === "/admin"
+                : pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
                 className={`flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                  active ? "border-mais text-paper" : "border-transparent text-paper/50 hover:text-paper"
+                  active
+                    ? "border-mais text-paper"
+                    : "border-transparent text-paper/50 hover:text-paper"
                 }`}
               >
                 <Icon size={14} />

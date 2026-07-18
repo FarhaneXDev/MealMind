@@ -111,13 +111,13 @@ export default function Inscription() {
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
           <label className="text-xs font-semibold uppercase tracking-widest text-ink/40">
-            Nom
+            Nom d&apos;utilisateur
           </label>
           <input
             type="text"
             value={nom}
             onChange={(e) => setNom(e.target.value)}
-            placeholder="Ton nom"
+            placeholder="Nom d'utilisateur"
             className="mt-1.5 w-full px-4 py-3 rounded-xl border border-ink/15 bg-white text-sm focus:outline-none focus:border-palm"
           />
         </div>
@@ -130,7 +130,7 @@ export default function Inscription() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="toi@exemple.com"
+            placeholder="mail@exemple.com"
             className="mt-1.5 w-full px-4 py-3 rounded-xl border border-ink/15 bg-white text-sm focus:outline-none focus:border-palm"
           />
         </div>
