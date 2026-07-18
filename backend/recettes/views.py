@@ -48,7 +48,6 @@ TEMPS_LIMITES = {
     "<10 min": 10,
     "10-20 min": 20,
     "20-30 min": 30,
-    "Peu importe": float("inf"),
 }
 
 
@@ -94,11 +93,14 @@ class SuggestionView(APIView):
                 status=404,
             )
 
-        temps_max = TEMPS_LIMITES.get(temps, float("inf"))
-        avec_temps = pool.filter(duree_min__lte=temps_max)
-        temps_respectable = avec_temps.exists()
-        if temps_respectable:
-            pool = avec_temps
+        temps_max = TEMPS_LIMITES.get(temps)
+        if temps_max is not None:
+            avec_temps = pool.filter(duree_min__lte=temps_max)
+            temps_respectable = avec_temps.exists()
+            if temps_respectable:
+                pool = avec_temps
+        else:
+            temps_respectable = True
 
         envie_respectable = True
         if envie:
