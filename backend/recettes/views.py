@@ -70,7 +70,6 @@ class SuggestionView(APIView):
         selected_ingredients = [i.strip() for i in ingredients_param.split(",") if i.strip()]
         exclude_ids = [int(i) for i in exclude_param.split(",") if i.strip().isdigit()]
 
-        # 1. Filtre obligatoire : repas, avec détection du "tour complet"
         pool_avec_exclusion = (
             Recette.objects.filter(repas__nom=repas).exclude(id__in=exclude_ids).distinct()
         )
@@ -95,14 +94,12 @@ class SuggestionView(APIView):
                 status=404,
             )
 
-        # 2. Filtre temps, avec repli
         temps_max = TEMPS_LIMITES.get(temps, float("inf"))
         avec_temps = pool.filter(duree_min__lte=temps_max)
         temps_respectable = avec_temps.exists()
         if temps_respectable:
             pool = avec_temps
 
-        # 3. Filtre envie, avec repli
         envie_respectable = True
         if envie:
             avec_envie = pool.filter(envies__code=envie).distinct()
@@ -110,7 +107,6 @@ class SuggestionView(APIView):
             if envie_respectable:
                 pool = avec_envie
 
-        # 4. Filtre budget, uniquement scénario "courses"
         if scenario == "courses" and budget == "petit":
             avec_budget = pool.filter(budget_fcfa__lte=1000)
             if avec_budget.exists():
@@ -118,7 +114,11 @@ class SuggestionView(APIView):
 
         pool = list(pool.distinct())
 
-        # 5. Score selon couverture des ingrédients possédés
+        # Filet de sécurité : si pool est vide ici pour une raison inattendue,
+        # on retombe sur toutes les recettes du repas plutôt que de planter.
+        if not pool:
+            pool = list(Recette.objects.filter(repas__nom=repas).distinct())
+
         def couverture(recette):
             if not selected_ingredients:
                 return 0, 0
@@ -138,7 +138,13 @@ class SuggestionView(APIView):
             if avec_match:
                 pool = avec_match
 
-        # 6. Score final et sélection
+        # Deuxième filet de sécurité, juste avant le calcul du score
+        if not pool:
+            return Response(
+                {"detail": "Aucune recette ne correspond, réessaie avec d'autres critères."},
+                status=404,
+            )
+
         scored = [(r, *couverture(r)) for r in pool]
         meilleur_ratio = max(s[1] for s in scored)
         top = [s for s in scored if s[1] == meilleur_ratio]
@@ -154,8 +160,7 @@ class SuggestionView(APIView):
             "couverture_ingredients": round(ratio_final * 100) if selected_ingredients else None,
         }
         data["tour_complet"] = tour_complet
-        return Response(data)
-        
+        return Response(data)    
 
 class RecettePublicDetailView(generics.RetrieveAPIView):
     queryset = Recette.objects.all()
